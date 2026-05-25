@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 704班级行为管理系统</title>
+    <style>
+        /* 704班级行为管理系统 - 公共样式 */
+        :root {
+            --primary-color: #1890ff;
+            --primary-hover: #40a9ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e8e8e8;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--bg-color); color: var(--text-primary); line-height: 1.6; }
+        .navbar { background: linear-gradient(135deg, var(--primary-color), #096dd9); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+        .navbar-brand { font-size: 20px; font-weight: 600; }
+        .navbar-info { display: flex; align-items: center; gap: 15px; }
+        .navbar-info .user-name { font-weight: 500; }
+        .navbar-info .role-badge { background: rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+        .btn-logout { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.3s; }
+        .btn-logout:hover { background: rgba(255, 255, 255, 0.3); }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color); }
+        .tabs { display: flex; background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+        .tab-btn { flex: 1; padding: 15px 20px; background: transparent; border: none; cursor: pointer; font-size: 15px; color: var(--text-secondary); transition: all 0.3s; border-bottom: 3px solid transparent; }
+        .tab-btn:hover { color: var(--primary-color); background: rgba(24, 144, 255, 0.05); }
+        .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); background: rgba(24, 144, 255, 0.08); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background: #fafafa; font-weight: 600; color: var(--text-primary); }
+        tr:hover { background: #f5f5f5; }
+        .highlight-row { background: rgba(24, 144, 255, 0.1) !important; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary); }
+        .form-group label .required { color: var(--danger-color); }
+        input[type="text"], input[type="number"], input[type="date"], textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; transition: border-color 0.3s; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1); }
+        textarea { resize: vertical; min-height: 80px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-success:hover { background: #73d13d; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-danger:hover { background: #ff7875; }
+        .btn-secondary { background: #999; color: white; }
+        .btn-secondary:hover { background: #777; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .metric-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; text-align: center; }
+        .metric-value { font-size: 36px; font-weight: 700; color: var(--primary-color); }
+        .metric-label { font-size: 14px; color: var(--text-secondary); margin-top: 5px; }
+        .chart-container { width: 100%; height: 400px; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); width: 100%; max-width: 400px; }
+        .login-title { text-align: center; font-size: 28px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+        .login-subtitle { text-align: center; color: var(--text-secondary); margin-bottom: 30px; }
+        .login-box .btn { width: 100%; padding: 12px; font-size: 16px; margin-top: 10px; }
+        .alert { padding: 12px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .alert-success { background: rgba(82, 196, 26, 0.1); color: var(--success-color); border: 1px solid var(--success-color); }
+        .alert-error { background: rgba(255, 77, 79, 0.1); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .alert-warning { background: rgba(250, 173, 20, 0.1); color: var(--warning-color); border: 1px solid var(--warning-color); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 20px; font-weight: 600; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .status-normal { color: var(--success-color); font-weight: 500; }
+        .status-warning { color: var(--warning-color); font-weight: 500; }
+        .status-danger { color: var(--danger-color); font-weight: 500; }
+        .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+        @media (max-width: 768px) { .navbar { flex-direction: column; gap: 10px; } .tabs { flex-wrap: wrap; } .tab-btn { flex: none; width: 50%; } .metrics-grid { grid-template-columns: repeat(2, 1fr); } .chart-container { height: 300px; } }
+        @media (max-width: 480px) { .container { padding: 10px; } .card { padding: 15px; } .metric-value { font-size: 28px; } .login-box { padding: 30px 20px; margin: 20px; } }
+        .action-buttons { display: flex; gap: 8px; }
+        .action-buttons .btn { padding: 6px 12px; font-size: 13px; }
+        .rank { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 600; font-size: 14px; }
+        .rank-1 { background: #ffd700; color: #8b6914; }
+        .rank-2 { background: #c0c0c0; color: #666; }
+        .rank-3 { background: #cd7f32; color: #fff; }
+        .detail-row { display: none; background: #f9f9f9; }
+        .detail-row.active { display: table-row; }
+        /* student.html 额外样式 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .radar-container { display: flex; justify-content: center; align-items: center; min-height: 400px; }
+        .radar-chart { width: 100%; max-width: 500px; height: 400px; }
+        .info-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .info-card { background: linear-gradient(135deg, var(--primary-color), #096dd9); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .info-card-value { font-size: 28px; font-weight: 700; }
+        .info-card-label { font-size: 14px; opacity: 0.9; }
+        .report-form { max-width: 500px; }
+        .category-tag { padding: 3px 10px; border-radius: 12px; font-size: 12px; background: #e6f7ff; color: #1890ff; }
+        .category-作业 { background: #e6f7ff; color: #1890ff; }
+        .category-卫生 { background: #f6ffed; color: #52c41a; }
+        .category-纪律 { background: #fff7e6; color: #fa8c16; }
+        .category-体育锻炼 { background: #fff1f0; color: #ff4d4f; }
+        .category-文明行为 { background: #f9f0ff; color: #722ed1; }
+        .category-其他 { background: #f5f5f5; color: #666; }
+        .score-positive { color: #52c41a; font-weight: 600; }
+        .score-negative { color: #ff4d4f; font-weight: 600; }
+        .refresh-hint { font-size: 12px; color: #999; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">704班级行为管理系统</div>
+        <div class="navbar-info">
+            <span class="user-name" id="userName">加载中...</span>
+            <span class="role-badge">学生</span>
+            <button class="btn-logout" onclick="logout()">退出</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('profile')">个人积分明细</button>
+            <button class="tab-btn" onclick="switchTab('ranking')">积分排行榜</button>
+            <button class="tab-btn" onclick="switchTab('radar')">六维度雷达图</button>
+            <button class="tab-btn" onclick="switchTab('report')">自主上报</button>
+        </div>
+
+        <!-- Tab1: 个人积分明细 -->
+        <div id="profile" class="tab-content active">
+            <div class="card">
+                <h3 class="card-title">我的积分概览</h3>
+                <div class="info-cards" id="infoCards"></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">行为记录明细</h3>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>排序：</label>
+                        <select id="sortOrder" onchange="loadRecords()">
+                            <option value="desc">按日期降序</option>
+                            <option value="asc">按日期升序</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="recordsLoading" class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                <div class="table-container" id="recordsTable" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>行为类别</th>
+                                <th>班规条款</th>
+                                <th>分值</th>
+                                <th>记录人</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="recordsEmpty" style="display: none;">
+                    <div class="empty-state-icon">📋</div>
+                    <p>暂无行为记录</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab2: 积分排行榜 -->
+        <div id="ranking" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">
+                    全班积分排行榜
+                    <span class="refresh-hint">每日自动刷新</span>
+                </h3>
+                <div id="rankingLoading" class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                <div class="table-container" id="rankingTable" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>姓名</th>
+                                <th>作业</th>
+                                <th>卫生</th>
+                                <th>纪律</th>
+                                <th>体育</th>
+                                <th>文明</th>
+                                <th>其他</th>
+                                <th>总积分</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab3: 六维度雷达图 -->
+        <div id="radar" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">
+                    我的六维度积分
+                    <span class="refresh-hint">每周自动生成</span>
+                </h3>
+                <div class="radar-container">
+                    <div id="radarChart" class="radar-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab4: 自主上报 -->
+        <div id="report" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">自主上报</h3>
+                <div class="report-form">
+                    <div class="form-group">
+                        <label>行为类别 <span class="required">*</span></label>
+                        <select id="reportCategory">
+                            <option value="">请选择行为类别</option>
+                            <option value="作业">作业</option>
+                            <option value="卫生">卫生</option>
+                            <option value="纪律">纪律</option>
+                            <option value="体育锻炼">体育锻炼</option>
+                            <option value="文明行为">文明行为</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>事迹描述 <span class="required">*</span></label>
+                        <textarea id="reportDescription" placeholder="请详细描述您的行为事迹..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitReport()">提交上报</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="alertModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="alertTitle">提示</h3>
+                <button class="modal-close" onclick="closeAlert()">&times;</button>
+            </div>
+            <div class="modal-body"><p id="alertMessage"></p></div>
+            <div class="modal-footer"><button class="btn btn-primary" onclick="closeAlert()">确定</button></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let studentProfile = null;
+        let radarChart = null;
+
+        function init() {
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) { window.location.href = '/login.html'; return; }
+            currentUser = JSON.parse(userInfo);
+            if (currentUser.role !== 'student') { window.location.href = '/login.html'; return; }
+            document.getElementById('userName').textContent = currentUser.name;
+            loadStudentProfile();
+        }
+
+        async function loadStudentProfile() {
+            try {
+                const response = await fetch(`/api/student/profile?name=${encodeURIComponent(currentUser.name)}`);
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    studentProfile = data.data;
+                    renderInfoCards();
+                    loadRecords();
+                } else {
+                    showAlert('错误', data.msg || '加载个人信息失败');
+                }
+            } catch (error) {
+                showAlert('错误', '网络错误，请刷新重试');
+            }
+        }
+
+        function renderInfoCards() {
+            if (!studentProfile) return;
+            const container = document.getElementById('infoCards');
+            container.innerHTML = `
+                <div class="info-card">
+                    <div class="info-card-value">${studentProfile.totalScore || 0}</div>
+                    <div class="info-card-label">总积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #52c41a, #389e0d);">
+                    <div class="info-card-value">${studentProfile.homeworkScore || 0}</div>
+                    <div class="info-card-label">作业积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #1890ff, #096dd9);">
+                    <div class="info-card-value">${studentProfile.hygieneScore || 0}</div>
+                    <div class="info-card-label">卫生积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #faad14, #d48806);">
+                    <div class="info-card-value">${studentProfile.disciplineScore || 0}</div>
+                    <div class="info-card-label">纪律积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #f5222d, #cf1322);">
+                    <div class="info-card-value">${studentProfile.sportsScore || 0}</div>
+                    <div class="info-card-label">体育锻炼</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #722ed1, #531dab);">
+                    <div class="info-card-value">${studentProfile.civilizedScore || 0}</div>
+                    <div class="info-card-label">文明行为</div>
+                </div>
+            `;
+        }
+
+        async function loadRecords() {
+            const sortOrder = document.getElementById('sortOrder').value;
+            document.getElementById('recordsLoading').style.display = 'block';
+            document.getElementById('recordsTable').style.display = 'none';
+            document.getElementById('recordsEmpty').style.display = 'none';
+            try {
+                const response = await fetch(`/api/student/records?name=${encodeURIComponent(currentUser.name)}&sort=${sortOrder}`);
+                const data = await response.json();
+                document.getElementById('recordsLoading').style.display = 'none';
+                if (data.code === 0 || data.success) {
+                    const records = data.data || [];
+                    if (records.length === 0) {
+                        document.getElementById('recordsEmpty').style.display = 'block';
+                    } else {
+                        renderRecords(records);
+                        document.getElementById('recordsTable').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('recordsLoading').style.display = 'none';
+                showAlert('错误', '网络错误');
+            }
+        }
+
+        function renderRecords(records) {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = records.map(record => {
+                const catClass = `category-${record.category || '其他'}`;
+                const scoreClass = record.score > 0 ? 'score-positive' : record.score < 0 ? 'score-negative' : '';
+                return `<tr>
+                    <td>${record.date || '-'}</td>
+                    <td><span class="category-tag ${catClass}">${record.category || '-'}</span></td>
+                    <td>${record.ruleClause || '-'}</td>
+                    <td class="${scoreClass}">${record.score > 0 ? '+' : ''}${record.score || 0}</td>
+                    <td>${record.recorder || '-'}</td>
+                    <td>${record.note || '-'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadRanking() {
+            document.getElementById('rankingLoading').style.display = 'block';
+            document.getElementById('rankingTable').style.display = 'none';
+            try {
+                const response = await fetch('/api/leaderboard');
+                const data = await response.json();
+                document.getElementById('rankingLoading').style.display = 'none';
+                if (data.code === 0 || data.success) {
+                    renderRanking(data.data || []);
+                    document.getElementById('rankingTable').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('rankingLoading').style.display = 'none';
+            }
+        }
+
+        function renderRanking(students) {
+            const tbody = document.getElementById('rankingBody');
+            tbody.innerHTML = students.map((student, index) => {
+                const rankClass = index < 3 ? `rank rank-${index + 1}` : '';
+                const isCurrentUser = student.name === currentUser.name;
+                return `<tr class="${isCurrentUser ? 'highlight-row' : ''}">
+                    <td>${index < 3 ? `<span class="${rankClass}">${index + 1}</span>` : index + 1}</td>
+                    <td>${student.name}${isCurrentUser ? ' ★' : ''}</td>
+                    <td>${student.homeworkScore || 0}</td>
+                    <td>${student.hygieneScore || 0}</td>
+                    <td>${student.disciplineScore || 0}</td>
+                    <td>${student.sportsScore || 0}</td>
+                    <td>${student.civilizedScore || 0}</td>
+                    <td>${student.otherScore || 0}</td>
+                    <td><strong>${student.totalScore || 0}</strong></td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadRadarData() {
+            try {
+                const response = await fetch(`/api/student/radar?name=${encodeURIComponent(currentUser.name)}`);
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    renderRadarChart(data.data);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        function renderRadarChart(radarData) {
+            const chartDom = document.getElementById('radarChart');
+            if (!radarChart) radarChart = echarts.init(chartDom);
+            const option = {
+                tooltip: { trigger: 'item' },
+                legend: { data: ['我的积分'], bottom: 10 },
+                radar: {
+                    indicator: [
+                        { name: '作业', max: 50 }, { name: '卫生', max: 50 }, { name: '纪律', max: 50 },
+                        { name: '体育锻炼', max: 50 }, { name: '文明行为', max: 50 }, { name: '其他', max: 50 }
+                    ],
+                    shape: 'polygon', splitNumber: 5,
+                    axisName: { color: '#333' },
+                    splitLine: { lineStyle: { color: '#e8e8e8' } },
+                    splitArea: { show: true, areaStyle: { color: ['#f8f8f8', '#f0f0f0', '#e8e8e8', '#f0f0f0', '#f8f8f8'] } }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [{
+                        value: [radarData.homeworkScore||0, radarData.hygieneScore||0, radarData.disciplineScore||0,
+                               radarData.sportsScore||0, radarData.civilizedScore||0, radarData.otherScore||0],
+                        name: '我的积分',
+                        areaStyle: { color: 'rgba(24, 144, 255, 0.3)' },
+                        lineStyle: { color: '#1890ff', width: 2 },
+                        itemStyle: { color: '#1890ff' }
+                    }]
+                }]
+            };
+            radarChart.setOption(option);
+        }
+
+        async function submitReport() {
+            const category = document.getElementById('reportCategory').value;
+            const description = document.getElementById('reportDescription').value.trim();
+            if (!category) { showAlert('提示', '请选择行为类别'); return; }
+            if (!description) { showAlert('提示', '请填写事迹描述'); return; }
+            try {
+                const response = await fetch('/api/student/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: currentUser.name, category: category, description: description })
+                });
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    showAlert('提交成功', '已提交，等待值日班长审核');
+                    document.getElementById('reportCategory').value = '';
+                    document.getElementById('reportDescription').value = '';
+                } else {
+                    showAlert('提交失败', data.msg || '请重试');
+                }
+            } catch (error) { showAlert('错误', '网络错误'); }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (tabId === 'ranking') loadRanking();
+            else if (tabId === 'radar') loadRadarData();
+        }
+
+        function logout() { localStorage.removeItem('userInfo'); window.location.href = '/login.html'; }
+        function showAlert(title, message) {
+            document.getElementById('alertTitle').textContent = title;
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').classList.add('active');
+        }
+        function closeAlert() { document.getElementById('alertModal').classList.remove('active'); }
+        window.addEventListener('resize', () => { if (radarChart) radarChart.resize(); });
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
