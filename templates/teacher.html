@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 - 704班行为管理系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 20px 24px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-emoji {
+            font-size: 32px;
+        }
+        
+        .header-title {
+            font-size: 22px;
+            font-weight: bold;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .header-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .stat-card.orange {
+            background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+        }
+        
+        .stat-card.green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .stat-emoji {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        .chart-container {
+            height: 350px;
+        }
+        
+        .chart-container-sm {
+            height: 280px;
+        }
+        
+        .chart-container-lg {
+            height: 380px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e0e0e0;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 预警列表 */
+        .warning-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .warning-item {
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .warning-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .warning-item.red {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-left: 4px solid #f44336;
+        }
+        
+        .warning-item.orange {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 4px solid #ff9800;
+        }
+        
+        .warning-icon {
+            font-size: 28px;
+        }
+        
+        .warning-info {
+            flex: 1;
+        }
+        
+        .warning-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .warning-reason {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        /* 排行榜 */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .leaderboard-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .leaderboard-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .rank-1 { background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%); color: white; }
+        .rank-2 { background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%); color: white; }
+        .rank-3 { background: linear-gradient(135deg, #cd7f32 0%, #b8690b 100%); color: white; }
+        .rank-other { background: #f0f0f0; color: #666; }
+        
+        .status-tag {
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        
+        .status-normal { background: #e8f5e9; color: #43a047; }
+        .status-warning { background: #fff3e0; color: #ff9800; }
+        .status-alert { background: #ffebee; color: #f44336; }
+        
+        .score-positive { color: #43e97b; font-weight: bold; }
+        .score-negative { color: #ff6b6b; font-weight: bold; }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .detail-item {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .detail-item .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4facfe;
+        }
+        
+        .detail-item .value.negative {
+            color: #ff6b6b;
+        }
+        
+        .detail-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        /* 学生详情弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .refresh-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state .emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .btn-detail {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-detail:hover {
+            opacity: 0.85;
+            transform: scale(1.05);
+        }
+        
+        /* 学生卡片（六维图页面用） */
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .student-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .student-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+        }
+        
+        .student-card-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .student-card-score {
+            font-size: 13px;
+        }
+        
+        .student-card-status {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .detail-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <span class="header-emoji">👩‍🏫</span>
+            <span class="header-title">教师端 - 704班行为管理</span>
+        </div>
+        <div class="header-right">
+            <span class="user-info" id="userInfo">👋 你好！</span>
+            <button class="header-btn" onclick="exportData()">📥 导出</button>
+            <button class="header-btn" onclick="logout()">退出</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- 统计卡片 -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card">
+                <div class="stat-emoji">👥</div>
+                <div class="stat-value" id="totalStudents">-</div>
+                <div class="stat-label">班级人数</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-emoji">⚠️</div>
+                <div class="stat-value" id="warningCount">-</div>
+                <div class="stat-label">预警人数</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-emoji">📝</div>
+                <div class="stat-value" id="todayRecords">-</div>
+                <div class="stat-label">今日记录</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-emoji">📉</div>
+                <div class="stat-value" id="todayViolations">-</div>
+                <div class="stat-label">今日违规</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-emoji">📊</div>
+                <div class="stat-value" id="avgScore">-</div>
+                <div class="stat-label">平均积分</div>
+            </div>
+        </div>
+        
+        <!-- 标签页 -->
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('overview')">📊 数据概览</button>
+                <button class="tab" onclick="switchTab('warnings')">⚠️ 预警名单</button>
+                <button class="tab" onclick="switchTab('leaderboard')">🏆 排行榜</button>
+                <button class="tab" onclick="switchTab('distribution')">📈 分布统计</button>
+                <button class="tab" onclick="switchTab('trend')">📉 加扣分趋势</button>
+                <button class="tab" onclick="switchTab('radar')">🎯 六维雷达图</button>
+            </div>
+            
+            <!-- 数据概览 -->
+            <div class="tab-content active" id="overview">
+                <div class="main-grid">
+                    <div>
+                        <div class="card-title">🏆 积分排行榜 TOP10</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>姓名</th>
+                                    <th>总积分</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top10Body"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div>
+                        <div class="card-title">⚠️ 需要关注</div>
+                        <div class="warning-list" id="warningList"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 预警名单 -->
+            <div class="tab-content" id="warnings">
+                <div class="warning-list" id="fullWarningList"></div>
+            </div>
+            
+            <!-- 排行榜 -->
+            <div class="tab-content" id="leaderboard">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th>姓名</th>
+                            <th>总积分</th>
+                            <th>作业</th>
+                            <th>卫生</th>
+                            <th>纪律</th>
+                            <th>体育</th>
+                            <th>文明</th>
+                            <th>其他</th>
+                            <th>状态</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullLeaderboardBody"></tbody>
+                </table>
+            </div>
+            
+            <!-- 分布统计 -->
+            <div class="tab-content" id="distribution">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div class="card-title">📊 积分分布</div>
+                        <div class="chart-container-sm" id="distributionChart"></div>
+                    </div>
+                    <div>
+                        <div class="card-title">📈 今日行为类别</div>
+                        <div class="chart-container-sm" id="categoryChart"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 加扣分趋势 -->
+            <div class="tab-content" id="trend">
+                <div class="card-title">📉 近21天全班加扣分趋势</div>
+                <div class="chart-container-lg" id="scoreTrendChart"></div>
+            </div>
+            
+            <!-- 六维雷达图 -->
+            <div class="tab-content" id="radar">
+                <div class="card-title">🎯 点击学生查看六维雷达图</div>
+                <div class="student-grid" id="studentGrid"></div>
+                <div id="radarChartArea" style="display:none; margin-top: 20px;">
+                    <div class="card-title" id="radarChartTitle">📊 六维雷达图</div>
+                    <div class="chart-container-lg" id="radarChartMain"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 学生详情弹窗 -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">学生详情</span>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+    
+    <script>
+        let userName = '';
+        let leaderboardData = [];
+        let distributionChart, categoryChart, scoreTrendChart, radarChartMain;
+        
+        // 检查登录状态
+        function checkAuth() {
+            const role = sessionStorage.getItem('userRole');
+            userName = sessionStorage.getItem('userName') || '';
+            
+            if (!role || role !== 'teacher') {
+                window.location.href = '/';
+                return false;
+            }
+            
+            document.getElementById('userInfo').textContent = `👋 ${userName}，您好！`;
+            return true;
+        }
+        
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = '/';
+        }
+        
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            
+            setTimeout(() => {
+                if (tabId === 'distribution') {
+                    if (distributionChart) distributionChart.resize();
+                    if (categoryChart) categoryChart.resize();
+                }
+                if (tabId === 'trend') {
+                    if (scoreTrendChart) scoreTrendChart.resize();
+                }
+                if (tabId === 'radar') {
+                    if (radarChartMain) radarChartMain.resize();
+                }
+            }, 100);
+        }
+        
+        // 加载数据
+        async function loadData() {
+            try {
+                // 加载教师看板
+                const dashRes = await fetch('/api/teacher/dashboard');
+                const dash = await dashRes.json();
+                
+                if (dash.stats) {
+                    document.getElementById('totalStudents').textContent = dash.stats.total_students || 0;
+                    document.getElementById('todayRecords').textContent = dash.stats.today_total_records || 0;
+                    document.getElementById('todayViolations').textContent = dash.stats.today_violations || 0;
+                    document.getElementById('avgScore').textContent = Math.round(dash.stats.average_score || 0);
+                }
+                
+                // 预警数
+                const warningCount = dash.warnings?.length || 0;
+                document.getElementById('warningCount').textContent = warningCount;
+                
+                // TOP10排行榜
+                leaderboardData = dash.leaderboard_top10 || [];
+                loadTop10(leaderboardData);
+                
+                // 预警列表
+                loadWarnings(dash.warnings || []);
+                
+                // 分布统计
+                if (dash.stats) {
+                    initDistributionChart(dash.stats.score_distribution);
+                    initCategoryChart(dash.stats.category_today);
+                }
+                
+                // 全排行榜
+                loadFullLeaderboard();
+                
+                // 加扣分趋势
+                loadScoreTrend();
+                
+                // 六维雷达图学生列表
+                loadStudentGrid();
+                
+            } catch (err) {
+                console.error('加载数据失败:', err);
+            }
+        }
+        
+        function loadTop10(list) {
+            const tbody = document.getElementById('top10Body');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="color:#999;padding:30px;">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = list.map(s => {
+                let rankClass = s.rank <= 3 ? `rank-${s.rank}` : 'rank-other';
+                let statusClass = s.status === '预警' ? 'status-alert' : 
+                                  s.status === '关注' ? 'status-warning' : 'status-normal';
+                let scoreClass = s.total >= 0 ? 'score-positive' : 'score-negative';
+                
+                return `
+                    <tr>
+                        <td><span class="rank-badge ${rankClass}">${s.rank <= 3 ? ['🥇','🥈','🥉'][s.rank-1] : s.rank}</span></td>
+                        <td><strong>${s.name || '未知'}</strong></td>
+                        <td class="${scoreClass}">${s.total}</td>
+                        <td><span class="status-tag ${statusClass}">${s.status || '正常'}</span></td>
+                        <td><button class="btn-detail" onclick="showStudentDetail('${s.name}')">查看详情</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        async function loadFullLeaderboard() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                const lb = data.leaderboard || [];
+                
+                const tbody = document.getElementById('fullLeaderboardBody');
+                tbody.innerHTML = lb.map(s => {
+                    let rankClass = s.rank <= 3 ? `rank-${s.rank}` : 'rank-other';
+                    let statusClass = s.status === '预警' ? 'status-alert' : 
+                                      s.status === '关注' ? 'status-warning' : 'status-normal';
+                    let scoreClass = s.total >= 0 ? 'score-positive' : 'score-negative';
+                    
+                    return `
+                        <tr>
+                            <td><span class="rank-badge ${rankClass}">${s.rank <= 3 ? ['🥇','🥈','🥉'][s.rank-1] : s.rank}</span></td>
+                            <td><strong>${s.name || '未知'}</strong></td>
+                            <td class="${scoreClass}">${s.total}</td>
+                            <td>${s.homework}</td>
+                            <td>${s.hygiene}</td>
+                            <td>${s.discipline}</td>
+                            <td>${s.sports}</td>
+                            <td>${s.civil}</td>
+                            <td>${s.other}</td>
+                            <td><span class="status-tag ${statusClass}">${s.status || '正常'}</span></td>
+                            <td><button class="btn-detail" onclick="showStudentDetail('${s.name}')">详情</button></td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('加载排行榜失败:', err);
+            }
+        }
+        
+        function loadWarnings(warnings) {
+            const list = document.getElementById('warningList');
+            const fullList = document.getElementById('fullWarningList');
+            
+            const html = warnings.length === 0 ? `
+                <div class="empty-state">
+                    <div class="emoji">🎉</div>
+                    <div>暂无预警同学，表现都很棒！</div>
+                </div>
+            ` : warnings.map(w => `
+                <div class="warning-item ${w.type}" onclick="showStudentDetail('${w.student}')">
+                    <span class="warning-icon">${w.type === 'red' ? '🔴' : '🟠'}</span>
+                    <div class="warning-info">
+                        <div class="warning-name">${w.student}</div>
+                        <div class="warning-reason">${w.reason}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            list.innerHTML = html;
+            fullList.innerHTML = html;
+        }
+        
+        function initDistributionChart(distribution) {
+            if (!distribution) return;
+            
+            if (!distributionChart) {
+                distributionChart = echarts.init(document.getElementById('distributionChart'));
+            }
+            
+            // 过滤掉0值区间，只显示有数据的
+            const keys = Object.keys(distribution);
+            const colors = [
+                '#ff6b6b', '#ff8e72', '#ffa502', '#ffbe76', '#f9ca24',
+                '#badc58', '#7bed9f', '#2ed573', '#1abc9c', '#4facfe',
+                '#667eea', '#a29bfe'
+            ];
+            
+            const pieData = [];
+            keys.forEach((key, i) => {
+                const val = distribution[key] || 0;
+                if (val > 0) {
+                    pieData.push({ value: val, name: key + '分' });
+                }
+            });
+            
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}人 ({d}%)'
+                },
+                color: colors,
+                series: [{
+                    type: 'pie',
+                    radius: ['30%', '70%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}\n{c}人',
+                        fontSize: 11
+                    },
+                    labelLine: {
+                        length: 10,
+                        length2: 15
+                    },
+                    data: pieData
+                }]
+            };
+            
+            distributionChart.setOption(option);
+        }
+        
+        function initCategoryChart(categoryData) {
+            if (!categoryData || Object.keys(categoryData).length === 0) {
+                document.getElementById('categoryChart').innerHTML = '<div class="empty-state"><div class="emoji">📭</div><div>今日暂无行为记录</div></div>';
+                return;
+            }
+            
+            if (!categoryChart) {
+                categoryChart = echarts.init(document.getElementById('categoryChart'));
+            }
+            
+            const categories = Object.keys(categoryData);
+            const emojiMap = {
+                '作业': '📚', '卫生': '🧹', '纪律': '📏',
+                '体育锻炼': '⚽', '文明行为': '🌟', '其他': '📋'
+            };
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' }
+                },
+                legend: {
+                    data: ['加分', '扣分'],
+                    top: 0
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: categories.map(c => emojiMap[c] + ' ' + c),
+                    axisLabel: { fontSize: 11 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { fontSize: 11 }
+                },
+                series: [
+                    {
+                        name: '加分',
+                        type: 'bar',
+                        data: categories.map(c => categoryData[c].positive),
+                        itemStyle: { color: '#43e97b', borderRadius: [4, 4, 0, 0] },
+                        barWidth: 20
+                    },
+                    {
+                        name: '扣分',
+                        type: 'bar',
+                        data: categories.map(c => categoryData[c].negative),
+                        itemStyle: { color: '#ff6b6b', borderRadius: [4, 4, 0, 0] },
+                        barWidth: 20
+                    }
+                ]
+            };
+            
+            categoryChart.setOption(option);
+        }
+        
+        async function loadScoreTrend() {
+            try {
+                const res = await fetch('/api/teacher/score-trend');
+                const data = await res.json();
+                const trend = data.trend || [];
+                
+                if (trend.length === 0) {
+                    document.getElementById('scoreTrendChart').innerHTML = '<div class="empty-state"><div class="emoji">📭</div><div>暂无趋势数据</div></div>';
+                    return;
+                }
+                
+                if (!scoreTrendChart) {
+                    scoreTrendChart = echarts.init(document.getElementById('scoreTrendChart'));
+                }
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross' }
+                    },
+                    legend: {
+                        data: ['🟢 加分总计', '🔴 扣分总计'],
+                        top: 0
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        top: '12%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: trend.map(t => t.date),
+                        axisLabel: { fontSize: 10, rotate: 45 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: { fontSize: 11 }
+                    },
+                    series: [
+                        {
+                            name: '🟢 加分总计',
+                            type: 'line',
+                            smooth: true,
+                            data: trend.map(t => t.positive),
+                            lineStyle: { color: '#43e97b', width: 3 },
+                            itemStyle: { color: '#43e97b' },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(67, 233, 123, 0.4)' },
+                                    { offset: 1, color: 'rgba(67, 233, 123, 0.05)' }
+                                ])
+                            },
+                            symbol: 'circle',
+                            symbolSize: 6
+                        },
+                        {
+                            name: '🔴 扣分总计',
+                            type: 'line',
+                            smooth: true,
+                            data: trend.map(t => t.negative),
+                            lineStyle: { color: '#ff6b6b', width: 3 },
+                            itemStyle: { color: '#ff6b6b' },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(255, 107, 107, 0.4)' },
+                                    { offset: 1, color: 'rgba(255, 107, 107, 0.05)' }
+                                ])
+                            },
+                            symbol: 'circle',
+                            symbolSize: 6
+                        }
+                    ]
+                };
+                
+                scoreTrendChart.setOption(option);
+            } catch (err) {
+                console.error('加载趋势数据失败:', err);
+            }
+        }
+        
+        async function loadStudentGrid() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const data = await res.json();
+                const lb = data.leaderboard || [];
+                
+                const grid = document.getElementById('studentGrid');
+                grid.innerHTML = lb.map(s => {
+                    let statusClass = s.status === '预警' ? 'status-alert' : 
+                                      s.status === '关注' ? 'status-warning' : 'status-normal';
+                    let scoreClass = s.total >= 0 ? 'score-positive' : 'score-negative';
+                    
+                    return `
+                        <div class="student-card" onclick="showRadarChart('${s.name}')">
+                            <div class="student-card-name">${s.name || '未知'}</div>
+                            <div class="student-card-score ${scoreClass}">${s.total}分</div>
+                            <div class="student-card-status"><span class="status-tag ${statusClass}">${s.status || '正常'}</span></div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('加载学生列表失败:', err);
+            }
+        }
+        
+        async function showRadarChart(name) {
+            try {
+                const res = await fetch(`/api/student/radar?name=${encodeURIComponent(name)}`);
+                const radar = await res.json();
+                
+                if (!radar || !radar.homework && radar.homework !== 0) {
+                    document.getElementById('radarChartArea').style.display = 'block';
+                    document.getElementById('radarChartTitle').textContent = `📊 ${name} - 无雷达数据`;
+                    return;
+                }
+                
+                document.getElementById('radarChartArea').style.display = 'block';
+                document.getElementById('radarChartTitle').textContent = `📊 ${name} 的六维雷达图`;
+                
+                if (!radarChartMain) {
+                    radarChartMain = echarts.init(document.getElementById('radarChartMain'));
+                }
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: function(params) {
+                            const vals = params.value;
+                            const labels = ['作业','卫生','纪律','体育','文明','其他'];
+                            let html = `<b>${name}</b><br/>`;
+                            html += `<span style="color:#999">基线50=零加减分</span><br/>`;
+                            for(let i=0;i<6;i++){
+                                const raw = vals[i] - 50;
+                                const sign = raw >= 0 ? '+' : '';
+                                html += `${labels[i]}: ${sign}${raw}<br/>`;
+                            }
+                            return html;
+                        }
+                    },
+                    radar: {
+                        indicator: [
+                            { name: '📚 作业', max: 100 },
+                            { name: '🧹 卫生', max: 100 },
+                            { name: '📏 纪律', max: 100 },
+                            { name: '⚽ 体育', max: 100 },
+                            { name: '🌟 文明', max: 100 },
+                            { name: '📋 其他', max: 100 }
+                        ],
+                        shape: 'polygon',
+                        splitNumber: 4,
+                        axisName: {
+                            fontSize: 13,
+                            color: '#333'
+                        }
+                    },
+                    series: [{
+                        type: 'radar',
+                        data: [{
+                            value: [
+                                radar.homework || 0,
+                                radar.hygiene || 0,
+                                radar.discipline || 0,
+                                radar.sports || 0,
+                                radar.civil || 0,
+                                radar.other || 0
+                            ],
+                            name: name,
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(79, 172, 254, 0.6)' },
+                                    { offset: 1, color: 'rgba(79, 172, 254, 0.1)' }
+                                ])
+                            },
+                            lineStyle: { color: '#4facfe', width: 2 },
+                            itemStyle: { color: '#4facfe' }
+                        }]
+                    }]
+                };
+                
+                radarChartMain.setOption(option);
+                radarChartMain.resize();
+                
+                // 滚动到雷达图位置
+                document.getElementById('radarChartArea').scrollIntoView({ behavior: 'smooth' });
+            } catch (err) {
+                console.error('加载雷达图失败:', err);
+            }
+        }
+        
+        async function showStudentDetail(name) {
+            document.getElementById('modalTitle').textContent = `📋 ${name} 的详情`;
+            document.getElementById('studentModal').classList.add('show');
+            
+            // 先显示加载中
+            document.getElementById('modalContent').innerHTML = '<div class="empty-state"><div class="emoji">⏳</div><div>加载中...</div></div>';
+            
+            try {
+                const profileRes = await fetch(`/api/student/profile?name=${encodeURIComponent(name)}`);
+                const profile = await profileRes.json();
+                
+                const detailRes = await fetch(`/api/teacher/student-detail?name=${encodeURIComponent(name)}`);
+                const detail = await detailRes.json();
+                
+                const recordsRes = await fetch(`/api/student/records?name=${encodeURIComponent(name)}&limit=50`);
+                const recordsData = await recordsRes.json();
+                
+                let scoreClass = (profile.total || 0) >= 0 ? '' : 'negative';
+                let statusColor = profile.status === '预警' ? '#f44336' : profile.status === '关注' ? '#ff9800' : '#43a047';
+                
+                let detailHtml = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                        <div class="detail-item">
+                            <div class="value">🏆 第${profile.rank || '-'}</div>
+                            <div class="label">班级排名</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="value ${scoreClass}">${profile.total || 0}</div>
+                            <div class="label">总积分</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="value" style="color: ${statusColor}">${profile.status || '正常'}</div>
+                            <div class="label">当前状态</div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid" style="margin-bottom: 20px;">
+                        <div class="detail-item"><div class="value">${profile.homework || 0}</div><div class="label">📚 作业</div></div>
+                        <div class="detail-item"><div class="value">${profile.hygiene || 0}</div><div class="label">🧹 卫生</div></div>
+                        <div class="detail-item"><div class="value">${profile.discipline || 0}</div><div class="label">📏 纪律</div></div>
+                        <div class="detail-item"><div class="value">${profile.sports || 0}</div><div class="label">⚽ 体育</div></div>
+                        <div class="detail-item"><div class="value">${profile.civil || 0}</div><div class="label">🌟 文明</div></div>
+                        <div class="detail-item"><div class="value">${profile.other || 0}</div><div class="label">📋 其他</div></div>
+                    </div>
+                `;
+                
+                // 六维雷达图
+                detailHtml += `
+                    <div style="margin-bottom: 20px;">
+                        <div class="card-title">📊 六维度雷达图</div>
+                        <div id="modalRadarChart" style="height: 300px;"></div>
+                    </div>
+                `;
+                
+                // 21天趋势
+                if (detail.trend && detail.trend.length > 0) {
+                    detailHtml += `
+                        <div style="margin-bottom: 20px;">
+                            <div class="card-title">📈 21天积分趋势</div>
+                            <div id="modalTrendChart" style="height: 250px;"></div>
+                        </div>
+                    `;
+                }
+                
+                // 最近行为记录
+                if (recordsData.records && recordsData.records.length > 0) {
+                    detailHtml += `
+                        <div>
+                            <div class="card-title">📝 最近行为记录</div>
+                            <table class="leaderboard-table" style="font-size: 13px;">
+                                <thead>
+                                    <tr>
+                                        <th>日期</th>
+                                        <th>类别</th>
+                                        <th>分值</th>
+                                        <th>班规条款</th>
+                                        <th>记录人</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${recordsData.records.slice(0, 15).map(r => `
+                                        <tr>
+                                            <td>${r.date || '-'}</td>
+                                            <td>${r.category || '-'}</td>
+                                            <td class="${r.score >= 0 ? 'score-positive' : 'score-negative'}">${r.score > 0 ? '+' : ''}${r.score}</td>
+                                            <td>${r.rule || '-'}</td>
+                                            <td>${r.recorder || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('modalContent').innerHTML = detailHtml;
+                
+                // 初始化弹窗中的图表
+                setTimeout(() => {
+                    // 雷达图
+                    const radarEl = document.getElementById('modalRadarChart');
+                    if (radarEl) {
+                        const rc = echarts.init(radarEl);
+                        const radarData = detail.radar || {};
+                        const radarVals = [
+                            radarData.homework || 0,
+                            radarData.hygiene || 0,
+                            radarData.discipline || 0,
+                            radarData.sports || 0,
+                            radarData.civil || 0,
+                            radarData.other || 0
+                        ];
+                        rc.setOption({
+                            tooltip: {
+                                trigger: 'item',
+                                formatter: function(params) {
+                                    const labels = ['作业','卫生','纪律','体育','文明','其他'];
+                                    let html = `<b>${name}</b><br/><span style="color:#999">基线50=零加减分</span><br/>`;
+                                    for(let i=0;i<6;i++){
+                                        const raw = params.value[i] - 50;
+                                        const sign = raw >= 0 ? '+' : '';
+                                        html += `${labels[i]}: ${sign}${raw}<br/>`;
+                                    }
+                                    return html;
+                                }
+                            },
+                            radar: {
+                                indicator: [
+                                    { name: '📚 作业', max: 100 },
+                                    { name: '🧹 卫生', max: 100 },
+                                    { name: '📏 纪律', max: 100 },
+                                    { name: '⚽ 体育', max: 100 },
+                                    { name: '🌟 文明', max: 100 },
+                                    { name: '📋 其他', max: 100 }
+                                ],
+                                shape: 'polygon',
+                                splitNumber: 4,
+                                axisName: { fontSize: 12 }
+                            },
+                            series: [{
+                                type: 'radar',
+                                data: [{
+                                    value: radarVals,
+                                    areaStyle: {
+                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            { offset: 0, color: 'rgba(79, 172, 254, 0.6)' },
+                                            { offset: 1, color: 'rgba(79, 172, 254, 0.1)' }
+                                        ])
+                                    },
+                                    lineStyle: { color: '#4facfe', width: 2 },
+                                    itemStyle: { color: '#4facfe' }
+                                }]
+                            }]
+                        });
+                    }
+                    
+                    // 趋势图
+                    if (detail.trend && detail.trend.length > 0) {
+                        const trendEl = document.getElementById('modalTrendChart');
+                        if (trendEl) {
+                            const tc = echarts.init(trendEl);
+                            tc.setOption({
+                                tooltip: {
+                                    trigger: 'axis'
+                                },
+                                grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+                                xAxis: {
+                                    type: 'category',
+                                    data: detail.trend.map(t => t.date),
+                                    axisLabel: { fontSize: 10, rotate: 45 }
+                                },
+                                yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+                                series: [{
+                                    name: '当日积分',
+                                    type: 'line',
+                                    smooth: true,
+                                    data: detail.trend.map(t => t.score),
+                                    areaStyle: {
+                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            { offset: 0, color: 'rgba(79, 172, 254, 0.5)' },
+                                            { offset: 1, color: 'rgba(79, 172, 254, 0.05)' }
+                                        ])
+                                    },
+                                    lineStyle: { color: '#4facfe', width: 2 },
+                                    itemStyle: { color: '#4facfe' },
+                                    symbol: 'circle',
+                                    symbolSize: 4
+                                },
+                                {
+                                    name: '累计积分',
+                                    type: 'line',
+                                    smooth: true,
+                                    data: detail.trend.map(t => t.cumulative),
+                                    lineStyle: { color: '#ff9800', width: 2, type: 'dashed' },
+                                    itemStyle: { color: '#ff9800' },
+                                    symbol: 'diamond',
+                                    symbolSize: 4
+                                }]
+                            });
+                        }
+                    }
+                }, 150);
+            } catch (err) {
+                document.getElementById('modalContent').innerHTML = `<div class="empty-state"><div class="emoji">❌</div><div>加载失败: ${err.message}</div></div>`;
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('studentModal').classList.remove('show');
+        }
+        
+        function exportData() {
+            window.open('/api/teacher/export', '_blank');
+        }
+        
+        // 点击弹窗外部关闭
+        document.getElementById('studentModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // ESC关闭弹窗
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // 初始化
+        if (checkAuth()) {
+            loadData();
+            
+            // 窗口调整时重绘图表
+            window.addEventListener('resize', () => {
+                if (distributionChart) distributionChart.resize();
+                if (categoryChart) categoryChart.resize();
+                if (scoreTrendChart) scoreTrendChart.resize();
+                if (radarChartMain) radarChartMain.resize();
+            });
+        }
+    </script>
+</body>
+</html>
