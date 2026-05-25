@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 704班级行为管理系统</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .radar-container { display: flex; justify-content: center; align-items: center; min-height: 400px; }
+        .radar-chart { width: 100%; max-width: 500px; height: 400px; }
+        .info-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .info-card { background: linear-gradient(135deg, var(--primary-color), #096dd9); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .info-card-value { font-size: 28px; font-weight: 700; }
+        .info-card-label { font-size: 14px; opacity: 0.9; }
+        .report-form { max-width: 500px; }
+        .category-tag { padding: 3px 10px; border-radius: 12px; font-size: 12px; background: #e6f7ff; color: #1890ff; }
+        .category-作业 { background: #e6f7ff; color: #1890ff; }
+        .category-卫生 { background: #f6ffed; color: #52c41a; }
+        .category-纪律 { background: #fff7e6; color: #fa8c16; }
+        .category-体育锻炼 { background: #fff1f0; color: #ff4d4f; }
+        .category-文明行为 { background: #f9f0ff; color: #722ed1; }
+        .category-其他 { background: #f5f5f5; color: #666; }
+        .score-positive { color: #52c41a; font-weight: 600; }
+        .score-negative { color: #ff4d4f; font-weight: 600; }
+        .refresh-hint { font-size: 12px; color: #999; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">704班级行为管理系统</div>
+        <div class="navbar-info">
+            <span class="user-name" id="userName">加载中...</span>
+            <span class="role-badge">学生</span>
+            <button class="btn-logout" onclick="logout()">退出</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('profile')">个人积分明细</button>
+            <button class="tab-btn" onclick="switchTab('ranking')">积分排行榜</button>
+            <button class="tab-btn" onclick="switchTab('radar')">六维度雷达图</button>
+            <button class="tab-btn" onclick="switchTab('report')">自主上报</button>
+        </div>
+
+        <!-- Tab1: 个人积分明细 -->
+        <div id="profile" class="tab-content active">
+            <div class="card">
+                <h3 class="card-title">我的积分概览</h3>
+                <div class="info-cards" id="infoCards"></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">行为记录明细</h3>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>排序：</label>
+                        <select id="sortOrder" onchange="loadRecords()">
+                            <option value="desc">按日期降序</option>
+                            <option value="asc">按日期升序</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="recordsLoading" class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                <div class="table-container" id="recordsTable" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>行为类别</th>
+                                <th>班规条款</th>
+                                <th>分值</th>
+                                <th>记录人</th>
+                                <th>备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="recordsEmpty" style="display: none;">
+                    <div class="empty-state-icon">📋</div>
+                    <p>暂无行为记录</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab2: 积分排行榜 -->
+        <div id="ranking" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">
+                    全班积分排行榜
+                    <span class="refresh-hint">每日自动刷新</span>
+                </h3>
+                <div id="rankingLoading" class="loading"><div class="spinner"></div><p>加载中...</p></div>
+                <div class="table-container" id="rankingTable" style="display: none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>姓名</th>
+                                <th>作业</th>
+                                <th>卫生</th>
+                                <th>纪律</th>
+                                <th>体育</th>
+                                <th>文明</th>
+                                <th>其他</th>
+                                <th>总积分</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab3: 六维度雷达图 -->
+        <div id="radar" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">
+                    我的六维度积分
+                    <span class="refresh-hint">每周自动生成</span>
+                </h3>
+                <div class="radar-container">
+                    <div id="radarChart" class="radar-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab4: 自主上报 -->
+        <div id="report" class="tab-content">
+            <div class="card">
+                <h3 class="card-title">自主上报</h3>
+                <div class="report-form">
+                    <div class="form-group">
+                        <label>行为类别 <span class="required">*</span></label>
+                        <select id="reportCategory">
+                            <option value="">请选择行为类别</option>
+                            <option value="作业">作业</option>
+                            <option value="卫生">卫生</option>
+                            <option value="纪律">纪律</option>
+                            <option value="体育锻炼">体育锻炼</option>
+                            <option value="文明行为">文明行为</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>事迹描述 <span class="required">*</span></label>
+                        <textarea id="reportDescription" placeholder="请详细描述您的行为事迹..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="submitReport()">提交上报</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="alertModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="alertTitle">提示</h3>
+                <button class="modal-close" onclick="closeAlert()">&times;</button>
+            </div>
+            <div class="modal-body"><p id="alertMessage"></p></div>
+            <div class="modal-footer"><button class="btn btn-primary" onclick="closeAlert()">确定</button></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let studentProfile = null;
+        let radarChart = null;
+
+        function init() {
+            const userInfo = localStorage.getItem('userInfo');
+            if (!userInfo) { window.location.href = '/login.html'; return; }
+            currentUser = JSON.parse(userInfo);
+            if (currentUser.role !== 'student') { window.location.href = '/login.html'; return; }
+            document.getElementById('userName').textContent = currentUser.name;
+            loadStudentProfile();
+        }
+
+        async function loadStudentProfile() {
+            try {
+                const response = await fetch(`/api/student/profile?name=${encodeURIComponent(currentUser.name)}`);
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    studentProfile = data.data;
+                    renderInfoCards();
+                    loadRecords();
+                } else {
+                    showAlert('错误', data.msg || '加载个人信息失败');
+                }
+            } catch (error) {
+                showAlert('错误', '网络错误，请刷新重试');
+            }
+        }
+
+        function renderInfoCards() {
+            if (!studentProfile) return;
+            const container = document.getElementById('infoCards');
+            container.innerHTML = `
+                <div class="info-card">
+                    <div class="info-card-value">${studentProfile.totalScore || 0}</div>
+                    <div class="info-card-label">总积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #52c41a, #389e0d);">
+                    <div class="info-card-value">${studentProfile.homeworkScore || 0}</div>
+                    <div class="info-card-label">作业积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #1890ff, #096dd9);">
+                    <div class="info-card-value">${studentProfile.hygieneScore || 0}</div>
+                    <div class="info-card-label">卫生积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #faad14, #d48806);">
+                    <div class="info-card-value">${studentProfile.disciplineScore || 0}</div>
+                    <div class="info-card-label">纪律积分</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #f5222d, #cf1322);">
+                    <div class="info-card-value">${studentProfile.sportsScore || 0}</div>
+                    <div class="info-card-label">体育锻炼</div>
+                </div>
+                <div class="info-card" style="background: linear-gradient(135deg, #722ed1, #531dab);">
+                    <div class="info-card-value">${studentProfile.civilizedScore || 0}</div>
+                    <div class="info-card-label">文明行为</div>
+                </div>
+            `;
+        }
+
+        async function loadRecords() {
+            const sortOrder = document.getElementById('sortOrder').value;
+            document.getElementById('recordsLoading').style.display = 'block';
+            document.getElementById('recordsTable').style.display = 'none';
+            document.getElementById('recordsEmpty').style.display = 'none';
+            try {
+                const response = await fetch(`/api/student/records?name=${encodeURIComponent(currentUser.name)}&sort=${sortOrder}`);
+                const data = await response.json();
+                document.getElementById('recordsLoading').style.display = 'none';
+                if (data.code === 0 || data.success) {
+                    const records = data.data || [];
+                    if (records.length === 0) {
+                        document.getElementById('recordsEmpty').style.display = 'block';
+                    } else {
+                        renderRecords(records);
+                        document.getElementById('recordsTable').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('recordsLoading').style.display = 'none';
+                showAlert('错误', '网络错误');
+            }
+        }
+
+        function renderRecords(records) {
+            const tbody = document.getElementById('recordsBody');
+            tbody.innerHTML = records.map(record => {
+                const catClass = `category-${record.category || '其他'}`;
+                const scoreClass = record.score > 0 ? 'score-positive' : record.score < 0 ? 'score-negative' : '';
+                return `<tr>
+                    <td>${record.date || '-'}</td>
+                    <td><span class="category-tag ${catClass}">${record.category || '-'}</span></td>
+                    <td>${record.ruleClause || '-'}</td>
+                    <td class="${scoreClass}">${record.score > 0 ? '+' : ''}${record.score || 0}</td>
+                    <td>${record.recorder || '-'}</td>
+                    <td>${record.note || '-'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadRanking() {
+            document.getElementById('rankingLoading').style.display = 'block';
+            document.getElementById('rankingTable').style.display = 'none';
+            try {
+                const response = await fetch('/api/leaderboard');
+                const data = await response.json();
+                document.getElementById('rankingLoading').style.display = 'none';
+                if (data.code === 0 || data.success) {
+                    renderRanking(data.data || []);
+                    document.getElementById('rankingTable').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('rankingLoading').style.display = 'none';
+            }
+        }
+
+        function renderRanking(students) {
+            const tbody = document.getElementById('rankingBody');
+            tbody.innerHTML = students.map((student, index) => {
+                const rankClass = index < 3 ? `rank rank-${index + 1}` : '';
+                const isCurrentUser = student.name === currentUser.name;
+                return `<tr class="${isCurrentUser ? 'highlight-row' : ''}">
+                    <td>${index < 3 ? `<span class="${rankClass}">${index + 1}</span>` : index + 1}</td>
+                    <td>${student.name}${isCurrentUser ? ' ★' : ''}</td>
+                    <td>${student.homeworkScore || 0}</td>
+                    <td>${student.hygieneScore || 0}</td>
+                    <td>${student.disciplineScore || 0}</td>
+                    <td>${student.sportsScore || 0}</td>
+                    <td>${student.civilizedScore || 0}</td>
+                    <td>${student.otherScore || 0}</td>
+                    <td><strong>${student.totalScore || 0}</strong></td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadRadarData() {
+            try {
+                const response = await fetch(`/api/student/radar?name=${encodeURIComponent(currentUser.name)}`);
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    renderRadarChart(data.data);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        function renderRadarChart(radarData) {
+            const chartDom = document.getElementById('radarChart');
+            if (!radarChart) radarChart = echarts.init(chartDom);
+            const option = {
+                tooltip: { trigger: 'item' },
+                legend: { data: ['我的积分'], bottom: 10 },
+                radar: {
+                    indicator: [
+                        { name: '作业', max: 50 }, { name: '卫生', max: 50 }, { name: '纪律', max: 50 },
+                        { name: '体育锻炼', max: 50 }, { name: '文明行为', max: 50 }, { name: '其他', max: 50 }
+                    ],
+                    shape: 'polygon', splitNumber: 5,
+                    axisName: { color: '#333' },
+                    splitLine: { lineStyle: { color: '#e8e8e8' } },
+                    splitArea: { show: true, areaStyle: { color: ['#f8f8f8', '#f0f0f0', '#e8e8e8', '#f0f0f0', '#f8f8f8'] } }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [{
+                        value: [radarData.homeworkScore||0, radarData.hygieneScore||0, radarData.disciplineScore||0,
+                               radarData.sportsScore||0, radarData.civilizedScore||0, radarData.otherScore||0],
+                        name: '我的积分',
+                        areaStyle: { color: 'rgba(24, 144, 255, 0.3)' },
+                        lineStyle: { color: '#1890ff', width: 2 },
+                        itemStyle: { color: '#1890ff' }
+                    }]
+                }]
+            };
+            radarChart.setOption(option);
+        }
+
+        async function submitReport() {
+            const category = document.getElementById('reportCategory').value;
+            const description = document.getElementById('reportDescription').value.trim();
+            if (!category) { showAlert('提示', '请选择行为类别'); return; }
+            if (!description) { showAlert('提示', '请填写事迹描述'); return; }
+            try {
+                const response = await fetch('/api/student/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: currentUser.name, category: category, description: description })
+                });
+                const data = await response.json();
+                if (data.code === 0 || data.success) {
+                    showAlert('提交成功', '已提交，等待值日班长审核');
+                    document.getElementById('reportCategory').value = '';
+                    document.getElementById('reportDescription').value = '';
+                } else {
+                    showAlert('提交失败', data.msg || '请重试');
+                }
+            } catch (error) { showAlert('错误', '网络错误'); }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (tabId === 'ranking') loadRanking();
+            else if (tabId === 'radar') loadRadarData();
+        }
+
+        function logout() { localStorage.removeItem('userInfo'); window.location.href = '/login.html'; }
+        function showAlert(title, message) {
+            document.getElementById('alertTitle').textContent = title;
+            document.getElementById('alertMessage').textContent = message;
+            document.getElementById('alertModal').classList.add('active');
+        }
+        function closeAlert() { document.getElementById('alertModal').classList.remove('active'); }
+        window.addEventListener('resize', () => { if (radarChart) radarChart.resize(); });
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
